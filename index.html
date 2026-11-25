@@ -101,6 +101,21 @@
   .bar-fill.muted { background: var(--muted); }
   .bar-count { text-align: right; font-variant-numeric: tabular-nums; }
 
+  .lists-title { margin-top: 30px; }
+  .lists { margin-bottom: 18px; }
+  button.list-btn { font: inherit; color: inherit; text-align: left; border: 2px solid transparent; cursor: pointer; width: 100%; }
+  button.list-btn:hover { border-color: var(--line); }
+  button.list-btn[aria-selected="true"] { border-color: var(--red); background: var(--bg); }
+  button.list-btn[aria-selected="true"] h3 { color: var(--ink); }
+  .list-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+  .list-head h2 { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font: inherit; font-size: 13px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+  .chip span { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+  .chip[aria-pressed="true"] span { color: var(--bg); opacity: .75; }
+  .list-table { max-height: 560px; overflow: auto; }
+  #pda-lookup-wrap { margin-bottom: 8px; }
   .notice { border: 1px solid var(--bad); color: var(--bad); border-radius: 10px; padding: 14px 16px; margin-bottom: 20px; }
   .loading strong { color: var(--line); }
 
@@ -139,41 +154,13 @@
   <section id="pda" role="tabpanel" aria-labelledby="tab-pda" class="loading">
     <p class="takeaway">Of <b data-k="h.total">–</b> PDAs handed over, <b data-k="h.yes">–</b> are with stars marked as left. <b data-k="r.yes">–</b> PDAs were received back and <b data-k="p.yes">–</b> replacements were delivered.</p>
 
-    <div class="groups">
-      <div class="group">
-        <h3>Handover to Stars: Left</h3>
-        <div class="stats">
-          <div class="stat"><span>Total</span><strong data-k="h.total">–</strong></div>
-          <div class="stat"><span>Yes</span><strong data-k="h.yes">–</strong></div>
-          <div class="stat"><span>No</span><strong data-k="h.no">–</strong></div>
-          <div class="stat blank"><span>Blank</span><strong data-k="h.blank">–</strong></div>
-        </div>
-      </div>
-      <div class="group">
-        <h3>Received from the star: Received</h3>
-        <div class="stats">
-          <div class="stat"><span>Total</span><strong data-k="r.total">–</strong></div>
-          <div class="stat yes"><span>Received</span><strong data-k="r.yes">–</strong></div>
-          <div class="stat blank"><span>Blank</span><strong data-k="r.blank">–</strong></div>
-        </div>
-      </div>
-      <div class="group">
-        <h3 class="arabic">تم تسليم البديل</h3>
-        <div class="stats">
-          <div class="stat"><span>Total</span><strong data-k="p.total">–</strong></div>
-          <div class="stat yes"><span>Delivered</span><strong data-k="p.yes">–</strong></div>
-          <div class="stat blank"><span>Blank</span><strong data-k="p.blank">–</strong></div>
-        </div>
-      </div>
-    </div>
-
     <h2>Look up a star</h2>
     <div class="search">
       <label for="pda-search">Star ID or star name</label>
       <input id="pda-search" type="search" autocomplete="off" placeholder="e.g. Kib9DtvYgZopzX0TC7AQ1 or Mostafa">
     </div>
     <p class="msg" id="pda-msg">Type a Star ID or part of a name to see his PDA status.</p>
-    <div class="tablewrap">
+    <div class="tablewrap" id="pda-lookup-wrap" hidden>
       <table>
         <thead><tr>
           <th>Star ID</th><th>Star name</th><th>Hub</th><th>S/N</th>
@@ -181,6 +168,54 @@
         </tr></thead>
         <tbody id="pda-rows"></tbody>
       </table>
+    </div>
+
+    <h2 class="lists-title">Lists</h2>
+    <div class="groups lists" role="tablist" aria-label="PDA lists">
+      <button class="group list-btn" type="button" role="tab" data-list="handover" aria-selected="true">
+        <h3>Handover to Stars: Left</h3>
+        <div class="stats">
+          <div class="stat"><span>Total</span><strong data-k="h.total">–</strong></div>
+          <div class="stat"><span>Yes</span><strong data-k="h.yes">–</strong></div>
+          <div class="stat"><span>No</span><strong data-k="h.no">–</strong></div>
+          <div class="stat blank"><span>Blank</span><strong data-k="h.blank">–</strong></div>
+        </div>
+      </button>
+      <button class="group list-btn" type="button" role="tab" data-list="received" aria-selected="false">
+        <h3>Received from the star: Received</h3>
+        <div class="stats">
+          <div class="stat"><span>Total</span><strong data-k="r.total">–</strong></div>
+          <div class="stat yes"><span>Received</span><strong data-k="r.yes">–</strong></div>
+          <div class="stat blank"><span>Blank</span><strong data-k="r.blank">–</strong></div>
+        </div>
+      </button>
+      <button class="group list-btn" type="button" role="tab" data-list="replacement" aria-selected="false">
+        <h3 class="arabic">تم تسليم البديل</h3>
+        <div class="stats">
+          <div class="stat"><span>Total</span><strong data-k="p.total">–</strong></div>
+          <div class="stat yes"><span>Delivered</span><strong data-k="p.yes">–</strong></div>
+          <div class="stat blank"><span>Blank</span><strong data-k="p.blank">–</strong></div>
+        </div>
+      </button>
+    </div>
+
+    <div class="list-panel">
+      <div class="list-head">
+        <h2 id="list-title">Handover to Stars: Left</h2>
+        <div class="chips" role="group" aria-label="Filter by status">
+          <button type="button" class="chip" data-status="All" aria-pressed="true">All <span data-chip="All"></span></button>
+          <button type="button" class="chip" data-status="Yes" aria-pressed="false">Yes <span data-chip="Yes"></span></button>
+          <button type="button" class="chip" data-status="No" aria-pressed="false">No <span data-chip="No"></span></button>
+          <button type="button" class="chip" data-status="Blank" aria-pressed="false">Blank <span data-chip="Blank"></span></button>
+        </div>
+      </div>
+      <p class="msg" id="list-msg"></p>
+      <div class="tablewrap list-table">
+        <table>
+          <thead><tr id="list-headrow"></tr></thead>
+          <tbody id="list-rows"></tbody>
+        </table>
+      </div>
     </div>
   </section>
 
@@ -341,6 +376,7 @@
     const body = $('#pda-rows');
     body.replaceChildren();
     if (!DATA) return;
+    $('#pda-lookup-wrap').hidden = !q.trim();
     if (!q.trim()) { $('#pda-msg').textContent = 'Type a Star ID or part of a name to see his PDA status.'; return; }
     const rows = DATA.status.filter((r) => match(q, r.id, r.name)).slice(0, 100);
     $('#pda-msg').textContent = rows.length ? rows.length + (rows.length === 1 ? ' result' : ' results') : 'No star matches “' + q + '”.';
@@ -367,6 +403,72 @@
       body.appendChild(tr);
     });
   }
+
+  // ===== the 3 PDA lists =====
+  const LISTS = {
+    handover: {
+      title: 'Handover to Stars: Left',
+      rows: () => DATA.handover,
+      status: (r) => yn(r.left),
+      cols: [['Star ID', 'id'], ['Star name', 'name'], ['Hub', 'hub'], ['Contractor', 'contractor'], ['Owner', 'owner'],
+        ['Vehicle', 'vehicle'], ['S/N', 'sn'], ['Left', 'left', 'badge']]
+    },
+    received: {
+      title: 'Received from the star: Received',
+      rows: () => DATA.received,
+      status: (r) => yn(r.received),
+      cols: [['Star ID', 'id'], ['Star name', 'name'], ['Hub', 'hub'], ['Contractor', 'contractor'], ['Owner', 'owner'],
+        ['S/N', 'sn'], ['Received', 'received', 'badge'], ['Note', 'note', 'note']]
+    },
+    replacement: {
+      title: 'تم تسليم البديل',
+      rows: () => DATA.received,
+      status: (r) => yn(r.replacement),
+      cols: [['Star ID', 'id'], ['Star name', 'name'], ['Hub', 'hub'], ['Owner', 'owner'], ['S/N', 'sn'],
+        ['Received', 'received', 'badge'], ['تم تسليم البديل', 'replacement', 'badge'], ['Note', 'note', 'note']]
+    }
+  };
+  let currentList = 'handover';
+  let currentStatus = 'All';
+
+  function drawList() {
+    const L = LISTS[currentList];
+    $('#list-title').textContent = L.title;
+    $('#list-title').classList.toggle('arabic', currentList === 'replacement');
+    const head = $('#list-headrow');
+    head.replaceChildren();
+    L.cols.forEach(([label]) => { const th = document.createElement('th'); th.textContent = label; head.appendChild(th); });
+    const body = $('#list-rows');
+    body.replaceChildren();
+    if (!DATA) return;
+    const all = L.rows();
+    const counts = { All: all.length, Yes: 0, No: 0, Blank: 0 };
+    all.forEach((r) => { const st = L.status(r); if (counts[st] !== undefined) counts[st]++; });
+    document.querySelectorAll('[data-chip]').forEach((el) => { el.textContent = fmt(counts[el.dataset.chip]); });
+    const rows = currentStatus === 'All' ? all : all.filter((r) => L.status(r) === currentStatus);
+    $('#list-msg').textContent = rows.length
+      ? 'Showing ' + fmt(rows.length) + ' of ' + fmt(all.length) + ' rows.'
+      : 'No rows with status ' + currentStatus + ' in this list.';
+    rows.forEach((r) => {
+      const tr = document.createElement('tr');
+      L.cols.forEach(([, key, kind]) => {
+        if (kind === 'badge') tr.appendChild(badgeTd(r[key]));
+        else tr.appendChild(td(r[key], kind === 'note' ? 'wrapcell arabic' : ''));
+      });
+      body.appendChild(tr);
+    });
+  }
+
+  document.querySelectorAll('.list-btn').forEach((b) => b.addEventListener('click', () => {
+    currentList = b.dataset.list;
+    document.querySelectorAll('.list-btn').forEach((x) => x.setAttribute('aria-selected', x === b ? 'true' : 'false'));
+    drawList();
+  }));
+  document.querySelectorAll('.chip').forEach((c) => c.addEventListener('click', () => {
+    currentStatus = c.dataset.status;
+    document.querySelectorAll('.chip').forEach((x) => x.setAttribute('aria-pressed', x === c ? 'true' : 'false'));
+    drawList();
+  }));
 
   function showError(text) {
     const n = $('#notice');
@@ -397,6 +499,7 @@
       drawCounts();
       drawReasons();
       drawPdaRows();
+      drawList();
       drawLeftRows();
       const t = d.updated ? new Date(d.updated) : new Date();
       $('#updated').textContent = 'Updated ' + t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -438,6 +541,7 @@
   $('#left-search').addEventListener('input', drawLeftRows);
   $('#reload').addEventListener('click', load);
 
+  drawList();
   load();
   if (REFRESH_MINUTES > 0) setInterval(() => { if (!document.hidden) load(); }, REFRESH_MINUTES * 60 * 1000);
   // load at once when the reader comes back to the tab
