@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDAs &amp; Left Stars</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+  // ===== Paste the Web app URL from Apps Script here =====
+  const API_URL = 'https://script.google.com/macros/s/AKfycbzaZbcxg1jyM9oam_Od3U8IB9fDd_YHuV7TJ5gG8XF3jLf701ScW0ijp2RexhjCB4KHkg/exec';
+  const REFRESH_MINUTES = 5;
+</script>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #ffffff;
+    --surface: #f6f6f7;
+    --line: #e3e3e6;
+    --ink: #1a1a1d;
+    --muted: #6b6b73;
+    --red: #e30613;
+    --ok: #13804a;
+    --warn: #b26a00;
+    --bad: #c0262d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --bg: #151517;
+      --surface: #1f1f22;
+      --line: #34343a;
+      --ink: #f1f1f3;
+      --muted: #a2a2ab;
+      --red: #ff4b55;
+      --ok: #4cc584;
+      --warn: #f0a83a;
+      --bad: #ff6b70;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", "IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 20px 48px; }
+
+  header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; border-bottom: 3px solid var(--red); padding-bottom: 16px; }
+  h1 { margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.01em; }
+  .sub { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+  .refresh { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+  button.btn { font: inherit; font-size: 13px; padding: 7px 14px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+  button.btn:hover { border-color: var(--ink); }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+
+  nav.tabs { display: flex; gap: 4px; margin: 20px 0 24px; }
+  .tab { font: inherit; font-size: 15px; font-weight: 500; padding: 8px 18px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); cursor: pointer; }
+  .tab[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+
+  .takeaway { font-size: 17px; margin: 0 0 22px; max-width: 72ch; }
+  .takeaway b { font-variant-numeric: tabular-nums; }
+
+  .groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 30px; }
+  .group { background: var(--surface); border-radius: 10px; padding: 18px 18px 16px; min-width: 0; }
+  .group h3 { margin: 0 0 14px; font-size: 14px; font-weight: 500; color: var(--muted); }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 10px; }
+  .stat span { display: block; font-size: 12px; color: var(--muted); }
+  .stat strong { display: block; font-size: 30px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.15; }
+  .stat.yes strong { color: var(--ok); }
+  .stat.blank strong { color: var(--warn); }
+
+  h2 { font-size: 19px; font-weight: 600; margin: 0 0 10px; }
+  .search { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .search label { font-size: 13px; color: var(--muted); }
+  .search input { font: inherit; padding: 10px 14px; width: 100%; max-width: 520px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+  .msg { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { background: var(--surface); color: var(--muted); font-weight: 500; position: sticky; top: 0; }
+  tr:last-child td { border-bottom: 0; }
+  td.wrapcell { white-space: normal; min-width: 200px; }
+  td.arabic, .arabic { font-family: "IBM Plex Sans Arabic", "IBM Plex Sans", sans-serif; }
+
+  .badge { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12px; border: 1px solid var(--line); }
+  .badge.yes { color: var(--ok); border-color: var(--ok); }
+  .badge.no { color: var(--bad); border-color: var(--bad); }
+  .badge.blank { color: var(--warn); border-color: var(--warn); }
+
+  .bars { display: flex; flex-direction: column; gap: 8px; }
+  .bar { display: grid; grid-template-columns: minmax(100px, 38%) 1fr 2.5ch; gap: 10px; align-items: center; font-size: 13px; }
+  .bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { height: 12px; background: var(--line); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--red); border-radius: 3px; }
+  .bar-fill.muted { background: var(--muted); }
+  .bar-count { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .notice { border: 1px solid var(--bad); color: var(--bad); border-radius: 10px; padding: 14px 16px; margin-bottom: 20px; }
+  .loading strong { color: var(--line); }
+
+  @media (max-width: 560px) {
+    h1 { font-size: 23px; }
+    .stat strong { font-size: 25px; }
+  }
+  @media print {
+    nav.tabs, .search, .refresh { display: none; }
+    section[hidden] { display: block !important; }
+    section + section { break-before: page; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>PDAs &amp; Left Stars</h1>
+      <p class="sub">From the PDAs Handover to Stars sheet</p>
+    </div>
+    <div class="refresh">
+      <span id="updated">Loading…</span>
+      <button class="btn" id="reload" type="button">Refresh</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-pda" aria-selected="true" aria-controls="pda">PDA</button>
+    <button class="tab" role="tab" id="tab-left" aria-selected="false" aria-controls="left-stars">Left Stars</button>
+  </nav>
+
+  <div id="notice" class="notice" hidden></div>
+
+  <!-- ===== PDA ===== -->
+  <section id="pda" role="tabpanel" aria-labelledby="tab-pda" class="loading">
+    <p class="takeaway">Of <b data-k="h.total">–</b> PDAs handed over, <b data-k="h.yes">–</b> are with stars marked as left. <b data-k="r.yes">–</b> PDAs were received back and <b data-k="p.yes">–</b> replacements were delivered.</p>
+
+    <div class="groups">
+      <div class="group">
+        <h3>Handover to Stars: Left</h3>
+        <div class="stats">
+          <div class="stat"><span>Total</span><strong data-k="h.total">–</strong></div>
+          <div class="stat"><span>Yes</span><strong data-k="h.yes">–</strong></div>
+          <div class="stat"><span>No</span><strong data-k="h.no">–</strong></div>
+          <div class="stat blank"><span>Blank</span><strong data-k="h.blank">–</strong></div>
+        </div>
+      </div>
+      <div class="group">
+        <h3>Received from the star: Received</h3>
+        <div class="stats">
+          <div class="stat"><span>Total</span><strong data-k="r.total">–</strong></div>
+          <div class="stat yes"><span>Received</span><strong data-k="r.yes">–</strong></div>
+          <div class="stat blank"><span>Blank</span><strong data-k="r.blank">–</strong></div>
+        </div>
+      </div>
+      <div class="group">
+        <h3 class="arabic">تم تسليم البديل</h3>
+        <div class="stats">
+          <div class="stat"><span>Total</span><strong data-k="p.total">–</strong></div>
+          <div class="stat yes"><span>Delivered</span><strong data-k="p.yes">–</strong></div>
+          <div class="stat blank"><span>Blank</span><strong data-k="p.blank">–</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <h2>Look up a star</h2>
+    <div class="search">
+      <label for="pda-search">Star ID or star name</label>
+      <input id="pda-search" type="search" autocomplete="off" placeholder="e.g. Kib9DtvYgZopzX0TC7AQ1 or Mostafa">
+    </div>
+    <p class="msg" id="pda-msg">Type a Star ID or part of a name to see his PDA status.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th>Star ID</th><th>Star name</th><th>Hub</th><th>S/N</th>
+          <th>Has PDA</th><th>Left</th><th>Left date</th><th>PDA received</th><th>Replacement delivered</th>
+        </tr></thead>
+        <tbody id="pda-rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== Left Stars ===== -->
+  <section id="left-stars" role="tabpanel" aria-labelledby="tab-left" class="loading" hidden>
+    <p class="takeaway"><b data-k="l.total">–</b> stars are in Left Work. <b data-k="l.yes">–</b> of them are deactivated, and <b data-k="l.blank">–</b> have no deactivation status yet.</p>
+
+    <div class="groups">
+      <div class="group">
+        <h3>Left Work: Deactivate</h3>
+        <div class="stats">
+          <div class="stat"><span>Left stars</span><strong data-k="l.total">–</strong></div>
+          <div class="stat yes"><span>Deactivated</span><strong data-k="l.yes">–</strong></div>
+          <div class="stat"><span>No</span><strong data-k="l.no">–</strong></div>
+          <div class="stat blank"><span>Blank</span><strong data-k="l.blank">–</strong></div>
+        </div>
+      </div>
+      <div class="group">
+        <h3>Reasons</h3>
+        <div class="bars" id="reasons" role="img" aria-label="Number of left stars by reason"></div>
+      </div>
+    </div>
+
+    <h2>Look up a left star</h2>
+    <div class="search">
+      <label for="left-search">Star ID or star name</label>
+      <input id="left-search" type="search" autocomplete="off" placeholder="e.g. bcvc7mHmSdKy0p6385278 or Ahmed">
+    </div>
+    <p class="msg" id="left-msg"></p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th>Star ID</th><th>Star name</th><th>Hub</th><th>Agent</th>
+          <th>Left date</th><th>Reason</th><th>Deactivate</th><th>PDA</th>
+        </tr></thead>
+        <tbody id="left-rows"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  let DATA = null;
+  const $ = (s) => document.querySelector(s);
+  const fmt = (n) => Number(n || 0).toLocaleString('en-US');
+  const yn = (v) => {
+    const s = String(v || '').trim();
+    return !s ? 'Blank' : /^yes$/i.test(s) ? 'Yes' : /^no$/i.test(s) ? 'No' : s;
+  };
+  const count = (rows, field) => {
+    const c = { total: rows.length, yes: 0, no: 0, blank: 0 };
+    rows.forEach((r) => {
+      const v = yn(r[field]);
+      if (v === 'Yes') c.yes++; else if (v === 'No') c.no++; else if (v === 'Blank') c.blank++;
+    });
+    return c;
+  };
+  const match = (q, id, name) => {
+    q = String(q || '').trim().toLowerCase();
+    return !!q && (String(id || '').toLowerCase().includes(q) || String(name || '').toLowerCase().includes(q));
+  };
+  const td = (text, cls) => {
+    const el = document.createElement('td');
+    el.textContent = text || '';
+    if (cls) el.className = cls;
+    return el;
+  };
+  const badgeTd = (v) => {
+    const el = document.createElement('td');
+    const b = document.createElement('span');
+    const t = yn(v);
+    b.className = 'badge ' + ({ Yes: 'yes', No: 'no', Blank: 'blank' }[t] || '');
+    b.textContent = t;
+    el.appendChild(b);
+    return el;
+  };
+
+  // one row per star and device, joined from the three tabs
+  function buildStatus(d) {
+    const left = {};
+    d.leftwork.forEach((r) => { left[r.id] = r; });
+    const rec = {};
+    d.received.forEach((r) => {
+      rec[r.id + '|' + r.sn] = r;
+      if (!rec[r.id + '|*']) rec[r.id + '|*'] = r;
+    });
+    const out = [];
+    const seen = {};
+    const add = (id, name, hub, sn, hasPda, leftVal) => {
+      const key = id + '|' + (sn || '');
+      if (seen[key]) return;
+      seen[key] = true;
+      const rc = rec[key] || rec[id + '|*'];
+      const lw = left[id];
+      out.push({
+        id, name, hub, sn: sn || '', hasPda,
+        left: lw ? 'Yes' : leftVal,
+        leftDate: lw ? lw.leftDate : '',
+        received: rc ? yn(rc.received) : 'No',
+        replacement: rc ? yn(rc.replacement) : 'No'
+      });
+    };
+    const inHand = {};
+    d.handover.forEach((r) => { inHand[r.id] = true; add(r.id, r.name, r.hub, r.sn, 'Yes', yn(r.left)); });
+    d.received.forEach((r) => { inHand[r.id] = true; add(r.id, r.name, r.hub, r.sn, 'Yes', 'Blank'); });
+    d.leftwork.forEach((r) => { if (!inHand[r.id]) add(r.id, r.name, r.hub, '', 'No', 'Yes'); });
+    return out;
+  }
+
+  function drawCounts() {
+    const k = {
+      h: count(DATA.handover, 'left'),
+      r: count(DATA.received, 'received'),
+      p: count(DATA.received, 'replacement'),
+      l: count(DATA.leftwork, 'deactivate')
+    };
+    document.querySelectorAll('[data-k]').forEach((el) => {
+      const [g, f] = el.dataset.k.split('.');
+      el.textContent = fmt(k[g][f]);
+    });
+    document.querySelectorAll('section').forEach((s) => s.classList.remove('loading'));
+  }
+
+  function drawReasons() {
+    const c = {};
+    DATA.leftwork.forEach((r) => {
+      const k = String(r.reason || '').trim() || 'No reason yet';
+      c[k] = (c[k] || 0) + 1;
+    });
+    const rows = Object.keys(c).map((k) => ({ reason: k, n: c[k] })).sort((a, b) => b.n - a.n);
+    const max = Math.max(1, ...rows.map((r) => r.n));
+    const box = $('#reasons');
+    box.replaceChildren();
+    rows.forEach((r) => {
+      const row = document.createElement('div');
+      row.className = 'bar';
+      const lab = document.createElement('span');
+      lab.className = 'bar-label arabic';
+      lab.textContent = r.reason;
+      lab.title = r.reason;
+      const track = document.createElement('div');
+      track.className = 'bar-track';
+      const fill = document.createElement('div');
+      fill.className = 'bar-fill' + (r.reason === 'No reason yet' ? ' muted' : '');
+      fill.style.width = (r.n / max * 100) + '%';
+      track.appendChild(fill);
+      const n = document.createElement('span');
+      n.className = 'bar-count';
+      n.textContent = fmt(r.n);
+      row.append(lab, track, n);
+      box.appendChild(row);
+    });
+  }
+
+  function drawPdaRows() {
+    const q = $('#pda-search').value;
+    const body = $('#pda-rows');
+    body.replaceChildren();
+    if (!DATA) return;
+    if (!q.trim()) { $('#pda-msg').textContent = 'Type a Star ID or part of a name to see his PDA status.'; return; }
+    const rows = DATA.status.filter((r) => match(q, r.id, r.name)).slice(0, 100);
+    $('#pda-msg').textContent = rows.length ? rows.length + (rows.length === 1 ? ' result' : ' results') : 'No star matches “' + q + '”.';
+    rows.forEach((r) => {
+      const tr = document.createElement('tr');
+      tr.append(td(r.id), td(r.name), td(r.hub), td(r.sn), badgeTd(r.hasPda), badgeTd(r.left), td(r.leftDate), badgeTd(r.received), badgeTd(r.replacement));
+      body.appendChild(tr);
+    });
+  }
+
+  function drawLeftRows() {
+    const q = $('#left-search').value;
+    const body = $('#left-rows');
+    body.replaceChildren();
+    if (!DATA) return;
+    const all = DATA.leftwork;
+    const rows = q.trim() ? all.filter((r) => match(q, r.id, r.name)) : all;
+    $('#left-msg').textContent = !q.trim()
+      ? 'Showing all ' + rows.length + ' left stars. Type a Star ID or name to find one.'
+      : rows.length ? rows.length + (rows.length === 1 ? ' result' : ' results') : 'No left star matches “' + q + '”.';
+    rows.forEach((r) => {
+      const tr = document.createElement('tr');
+      tr.append(td(r.id), td(r.name), td(r.hub), td(r.agent), td(r.leftDate), td(r.reason || 'No reason yet', 'wrapcell arabic'), badgeTd(r.deactivate), badgeTd(r.pda));
+      body.appendChild(tr);
+    });
+  }
+
+  function showError(text) {
+    const n = $('#notice');
+    n.textContent = text;
+    n.hidden = false;
+    $('#updated').textContent = 'Not loaded';
+  }
+
+  async function load() {
+    if (!API_URL || API_URL.indexOf('PASTE_') === 0) {
+      showError('The dashboard has no data source yet. Put the Apps Script Web app URL in API_URL at the top of this file.');
+      return;
+    }
+    $('#updated').textContent = 'Loading…';
+    try {
+      const d = await getData();
+      ['handover', 'received', 'leftwork'].forEach((k) => { d[k] = d[k] || []; });
+      d.status = buildStatus(d);
+      DATA = d;
+      $('#notice').hidden = true;
+      drawCounts();
+      drawReasons();
+      drawPdaRows();
+      drawLeftRows();
+      const t = d.updated ? new Date(d.updated) : new Date();
+      $('#updated').textContent = 'Updated ' + t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      showError('Couldn’t load the sheet data. ' + (e && e.message ? e.message : ''));
+    }
+  }
+
+  // Loads the data with a <script> tag (JSONP), which needs no CORS and works from file:// too
+  function getData() {
+    return new Promise((resolve, reject) => {
+      const name = 'pdaData_' + Date.now();
+      const tag = document.createElement('script');
+      const done = () => { clearTimeout(timer); delete window[name]; tag.remove(); };
+      const timer = setTimeout(() => {
+        done();
+        reject(new Error('No answer from the Web app after 30 seconds.'));
+      }, 30000);
+      window[name] = (d) => { done(); resolve(d); };
+      tag.onerror = () => {
+        done();
+        reject(new Error('The Web app did not return data. Open its link in a private window: if it asks you to sign in, set Who has access to Anyone; if it shows "Script function not found: doGet", deploy a new version after saving DashboardApi.gs.'));
+      };
+      tag.src = API_URL + (API_URL.indexOf('?') > -1 ? '&' : '?') + 'callback=' + name + '&t=' + Date.now();
+      document.head.appendChild(tag);
+    });
+  }
+
+  // tabs
+  const show = (id) => {
+    document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', t.getAttribute('aria-controls') === id ? 'true' : 'false'));
+    document.querySelectorAll('section[role="tabpanel"]').forEach((s) => { s.hidden = s.id !== id; });
+    if (location.hash !== '#' + id) history.replaceState(null, '', '#' + id);
+  };
+  document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => show(t.getAttribute('aria-controls'))));
+  if (location.hash === '#left-stars') show('left-stars');
+
+  $('#pda-search').addEventListener('input', drawPdaRows);
+  $('#left-search').addEventListener('input', drawLeftRows);
+  $('#reload').addEventListener('click', load);
+
+  load();
+  if (REFRESH_MINUTES > 0) setInterval(load, REFRESH_MINUTES * 60 * 1000);
+})();
+</script>
+</body>
+</html>
