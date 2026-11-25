@@ -10,7 +10,7 @@
 <script>
   // ===== Paste the Web app URL from Apps Script here =====
   const API_URL = 'https://script.google.com/macros/s/AKfycbzaZbcxg1jyM9oam_Od3U8IB9fDd_YHuV7TJ5gG8XF3jLf701ScW0ijp2RexhjCB4KHkg/exec';
-  const REFRESH_MINUTES = 5;
+  const REFRESH_MINUTES = 1;   // refresh every minute
 </script>
 <style>
   :root {
@@ -375,12 +375,19 @@
     $('#updated').textContent = 'Not loaded';
   }
 
+  let busy = false;
   async function load() {
+    if (busy) return;   // the previous load is still running
+    busy = true;
+    try { await loadOnce(); } finally { busy = false; }
+  }
+
+  async function loadOnce() {
     if (!API_URL || API_URL.indexOf('PASTE_') === 0) {
       showError('The dashboard has no data source yet. Put the Apps Script Web app URL in API_URL at the top of this file.');
       return;
     }
-    $('#updated').textContent = 'Loading…';
+    if (!DATA) $('#updated').textContent = 'Loading…';
     try {
       const d = await getData();
       ['handover', 'received', 'leftwork'].forEach((k) => { d[k] = d[k] || []; });
@@ -392,7 +399,7 @@
       drawPdaRows();
       drawLeftRows();
       const t = d.updated ? new Date(d.updated) : new Date();
-      $('#updated').textContent = 'Updated ' + t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      $('#updated').textContent = 'Updated ' + t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     } catch (e) {
       showError('Couldn’t load the sheet data. ' + (e && e.message ? e.message : ''));
     }
@@ -432,7 +439,9 @@
   $('#reload').addEventListener('click', load);
 
   load();
-  if (REFRESH_MINUTES > 0) setInterval(load, REFRESH_MINUTES * 60 * 1000);
+  if (REFRESH_MINUTES > 0) setInterval(() => { if (!document.hidden) load(); }, REFRESH_MINUTES * 60 * 1000);
+  // load at once when the reader comes back to the tab
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
 })();
 </script>
 </body>
